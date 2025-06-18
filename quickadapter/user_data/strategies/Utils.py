@@ -7,6 +7,7 @@ import scipy as sp
 import talib.abstract as ta
 from typing import Callable, Literal, TypeVar
 from technical import qtpylib
+from pandas import Series
 
 T = TypeVar("T", pd.Series, float)
 
@@ -618,3 +619,9 @@ def zigzag(
                 state = TrendDirection.UP
 
     return pivots_indices, pivots_values, pivots_directions, pivots_scaled_natrs
+
+def zscore(series: Series, window: int = 30) -> Series:
+    mean = series.rolling(window).mean()
+    std = series.rolling(window).std()
+    z = (series - mean) / std
+    return z.replace([float('inf'), -float('inf')], float('nan'))

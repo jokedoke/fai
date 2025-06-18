@@ -1206,7 +1206,7 @@ def get_optuna_study_model_parameters(
     if regressor == "xgboost":
         study_model_parameters.update(
             {
-                "max_depth": trial.suggest_int("max_depth", 3, 15),
+                "max_depth": trial.suggest_int("max_depth", 3, 10),
                 "gamma": trial.suggest_float("gamma", 1e-8, 10.0, log=True),
             }
         )

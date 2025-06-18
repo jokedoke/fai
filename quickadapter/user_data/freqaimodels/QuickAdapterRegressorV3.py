@@ -53,7 +53,7 @@ class QuickAdapterRegressorV3(BaseRegressionModel):
     version = "3.7.94"
 
     @cached_property
-    def _optuna_config(self) -> dict:
+    def _optuna_config(self) -> dict[str, Any]:
         optuna_default_config = {
             "enabled": False,
             "n_jobs": min(
@@ -96,9 +96,9 @@ class QuickAdapterRegressorV3(BaseRegressionModel):
         self._optuna_hp_value: dict[str, float] = {}
         self._optuna_train_value: dict[str, float] = {}
         self._optuna_label_values: dict[str, list] = {}
-        self._optuna_hp_params: dict[str, dict] = {}
-        self._optuna_train_params: dict[str, dict] = {}
-        self._optuna_label_params: dict[str, dict] = {}
+        self._optuna_hp_params: dict[str, dict[str, Any]] = {}
+        self._optuna_train_params: dict[str, dict[str, Any]] = {}
+        self._optuna_label_params: dict[str, dict[str, Any]] = {}
         self.init_optuna_label_candle_pool()
         self._optuna_label_candle: dict[str, int] = {}
         self._optuna_label_candles: dict[str, int] = {}
@@ -551,6 +551,7 @@ class QuickAdapterRegressorV3(BaseRegressionModel):
             "power_mean",
             "weighted_sum",
             "kmeans",
+            "kmeans2",
             "knn_d1",
             "knn_d2_mean",
             "knn_d2_median",
@@ -663,7 +664,20 @@ class QuickAdapterRegressorV3(BaseRegressionModel):
                 ) - sp.stats.pmean(normalized_matrix, p=p, weights=np_weights, axis=1)
             elif metric == "weighted_sum":
                 return np.sum(np_weights * (ideal_point - normalized_matrix), axis=1)
-            elif metric == "kmeans":
+            elif metric in {"kmeans", "kmeans2"}:
+                if n_samples < 2:
+                    return np.ndarray([])
+                n_clusters = min(max(2, int(np.sqrt(n_samples / 2))), 10, n_samples)
+                if metric == "kmeans":
+                    kmeans = sklearn.cluster.KMeans(
+                        n_clusters=n_clusters, random_state=42, n_init=10
+                    )
+                    cluster_labels = kmeans.fit_predict(normalized_matrix)
+                    cluster_centers = kmeans.cluster_centers_
+                elif metric == "kmeans2":
+                    cluster_centers, cluster_labels = sp.cluster.vq.kmeans2(
+                        normalized_matrix, n_clusters, rng=42, minit="++"
+                    )
                 label_kmeans_metric = self.ft_params.get(
                     "label_kmeans_metric", "euclidean"
                 )
@@ -672,21 +686,6 @@ class QuickAdapterRegressorV3(BaseRegressionModel):
                     label_p_order, float
                 ):
                     cdist_kwargs["p"] = label_p_order
-                if n_samples == 0:
-                    return np.array([])
-                if n_samples == 1:
-                    return sp.spatial.distance.cdist(
-                        normalized_matrix,
-                        ideal_point_2d,
-                        metric=label_kmeans_metric,
-                        **cdist_kwargs,
-                    ).flatten()
-                n_clusters = min(max(2, int(np.sqrt(n_samples / 2))), 10, n_samples)
-                kmeans = sklearn.cluster.KMeans(
-                    n_clusters=n_clusters, random_state=42, n_init=10
-                )
-                cluster_labels = kmeans.fit_predict(normalized_matrix)
-                cluster_centers = kmeans.cluster_centers_
                 cluster_distances_to_ideal = sp.spatial.distance.cdist(
                     cluster_centers,
                     ideal_point_2d,

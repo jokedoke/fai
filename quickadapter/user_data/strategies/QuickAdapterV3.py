@@ -99,7 +99,7 @@ class QuickAdapterV3(IStrategy):
         return self.is_short_allowed()
 
     @cached_property
-    def plot_config(self) -> dict:
+    def plot_config(self) -> dict[str, Any]:
         return {
             "main_plot": {},
             "subplots": {
@@ -167,7 +167,7 @@ class QuickAdapterV3(IStrategy):
             / "models"
             / self.freqai_info.get("identifier")
         )
-        self._label_params: dict[str, dict] = {}
+        self._label_params: dict[str, dict[str, Any]] = {}
         for pair in self.pairs:
             self._label_params[pair] = (
                 self.optuna_load_best_params(pair, "label")
@@ -194,7 +194,7 @@ class QuickAdapterV3(IStrategy):
         )
 
     def feature_engineering_expand_all(
-        self, dataframe: DataFrame, period: int, metadata: dict, **kwargs
+        self, dataframe: DataFrame, period: int, metadata: dict[str, Any], **kwargs
     ) -> DataFrame:
         highs = dataframe.get("high")
         lows = dataframe.get("low")
@@ -234,7 +234,7 @@ class QuickAdapterV3(IStrategy):
         return dataframe
 
     def feature_engineering_expand_basic(
-        self, dataframe: DataFrame, metadata: dict, **kwargs
+        self, dataframe: DataFrame, metadata: dict[str, Any], **kwargs
     ) -> DataFrame:
         highs = dataframe.get("high")
         lows = dataframe.get("low")
@@ -407,7 +407,7 @@ class QuickAdapterV3(IStrategy):
             raise ValueError(f"Invalid pattern '{pattern}': {e}")
 
     def set_freqai_targets(
-        self, dataframe: DataFrame, metadata: dict, **kwargs
+        self, dataframe: DataFrame, metadata: dict[str, Any], **kwargs
     ) -> DataFrame:
         pair = str(metadata.get("pair"))
         label_period_candles = self.get_label_period_candles(pair)
@@ -445,7 +445,9 @@ class QuickAdapterV3(IStrategy):
             logger.info(f"{n_extrema=}")
         return dataframe
 
-    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_indicators(
+        self, dataframe: DataFrame, metadata: dict[str, Any]
+    ) -> DataFrame:
         dataframe = self.freqai.start(dataframe, metadata, self)
 
         dataframe["DI_catch"] = np.where(
@@ -470,7 +472,9 @@ class QuickAdapterV3(IStrategy):
 
         return dataframe
 
-    def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(
+        self, df: DataFrame, metadata: dict[str, Any]
+    ) -> DataFrame:
         enter_long_conditions = [
             df.get("do_predict") == 1,
             df.get("DI_catch") == 1,
@@ -495,7 +499,7 @@ class QuickAdapterV3(IStrategy):
 
         return df
 
-    def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, df: DataFrame, metadata: dict[str, Any]) -> DataFrame:
         return df
 
     def get_trade_entry_date(self, trade: Trade) -> datetime.datetime:
@@ -932,7 +936,9 @@ class QuickAdapterV3(IStrategy):
             smoothing_methods["gaussian"],
         )
 
-    def optuna_load_best_params(self, pair: str, namespace: str) -> Optional[dict]:
+    def optuna_load_best_params(
+        self, pair: str, namespace: str
+    ) -> Optional[dict[str, Any]]:
         best_params_path = Path(
             self.models_full_path
             / f"optuna-{namespace}-best-params-{pair.split('/')[0]}.json"
